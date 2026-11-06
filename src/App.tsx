@@ -229,8 +229,8 @@ function App() {
           {(screen === 'tasks' || screen === 'my-tasks') && <TasksPage role={profile.role} tasks={visibleTasks.filter((task) => profile.role === 'manager' || task.assignee_id === profile.id)} objects={objectById} people={personById} query={search} onQuery={setSearch} onOpenTask={setSelectedTaskId} onCreateTask={() => setFormModal({ kind: 'task' })} />}
         </div>
       </main>
-      {formModal && <FormDialog modal={formModal} objects={activeObjects} people={people} existingObject={formModal.kind === 'object' && formModal.objectId ? objectById.get(formModal.objectId) : undefined} existingTask={formModal.kind === 'task' && formModal.taskId ? tasks.find((task) => task.id === formModal.taskId) : undefined} busy={busy} onClose={() => setFormModal(null)} onSaveObject={(event, item) => void saveObject(event, item)} onSaveTask={(event, item) => void saveTask(event, item)} />}
       {selectedTask && <TaskDialog task={selectedTask} object={objectById.get(selectedTask.object_id)} assignee={personById.get(selectedTask.assignee_id)} role={profile.role} busy={busy} onClose={() => setSelectedTaskId(null)} onTransition={(status, comment) => void transitionTask(status, comment)} onEdit={() => setFormModal({ kind: 'task', taskId: selectedTask.id })} onDelete={() => void deleteTask(selectedTask)} />}
+      {formModal && <FormDialog modal={formModal} objects={activeObjects} people={people} existingObject={formModal.kind === 'object' && formModal.objectId ? objectById.get(formModal.objectId) : undefined} existingTask={formModal.kind === 'task' && formModal.taskId ? tasks.find((task) => task.id === formModal.taskId) : undefined} busy={busy} onClose={() => setFormModal(null)} onSaveObject={(event, item) => void saveObject(event, item)} onSaveTask={(event, item) => void saveTask(event, item)} />}
       {toast && <Toast toast={toast} onDismiss={() => setToast(null)} />}
     </div>
   )
