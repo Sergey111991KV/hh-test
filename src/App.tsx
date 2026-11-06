@@ -111,7 +111,7 @@ function App() {
   const selectedObject = selectedObjectId ? objectById.get(selectedObjectId) : undefined
   const selectedTask = selectedTaskId ? tasks.find((task) => task.id === selectedTaskId) : undefined
 
-  async function runAction(action: () => Promise<{ error: unknown }>, successMessage: string): Promise<boolean> {
+  async function runAction(action: () => PromiseLike<{ error: unknown }>, successMessage: string): Promise<boolean> {
     if (!supabase) return false
     setBusy(true)
     try {
@@ -135,20 +135,22 @@ function App() {
 
   async function saveObject(event: FormEvent<HTMLFormElement>, existing?: SiteObject) {
     event.preventDefault()
-    if (!supabase || !profile) return
+    const client = supabase
+    if (!client || !profile) return
     const fields = new FormData(event.currentTarget)
     const name = String(fields.get('name') ?? '').trim()
     const address = String(fields.get('address') ?? '').trim()
     if (existing) {
-      await runAction(() => supabase.from('objects').update({ name, address, updated_at: new Date().toISOString() }).eq('id', existing.id), 'Объект сохранён')
+      await runAction(() => client.from('objects').update({ name, address, updated_at: new Date().toISOString() }).eq('id', existing.id), 'Объект сохранён')
     } else {
-      await runAction(() => supabase.from('objects').insert({ name, address, created_by: profile.id }), 'Объект добавлен')
+      await runAction(() => client.from('objects').insert({ name, address, created_by: profile.id }), 'Объект добавлен')
     }
   }
 
   async function saveTask(event: FormEvent<HTMLFormElement>, existing?: WorkTask) {
     event.preventDefault()
-    if (!supabase) return
+    const client = supabase
+    if (!client) return
     const fields = new FormData(event.currentTarget)
     const values = {
       p_title: String(fields.get('title') ?? '').trim(),
@@ -157,18 +159,20 @@ function App() {
       p_assignee_id: String(fields.get('assignee_id') ?? ''),
     }
     await runAction(() => existing
-      ? supabase.rpc('update_task', { p_task_id: existing.id, ...values })
-      : supabase.rpc('create_task', values), existing ? 'Задача обновлена' : 'Задача создана')
+      ? client.rpc('update_task', { p_task_id: existing.id, ...values })
+      : client.rpc('create_task', values), existing ? 'Задача обновлена' : 'Задача создана')
   }
 
   async function transitionTask(status: TaskStatus, comment = '') {
-    if (!supabase || !selectedTask) return
-    await runAction(() => supabase.rpc('transition_task', { p_task_id: selectedTask.id, p_to_status: status, p_comment: comment }), status === 'accepted' ? 'Задача принята' : status === 'rework' ? 'Задача возвращена на доработку' : 'Статус обновлён')
+    const client = supabase
+    if (!client || !selectedTask) return
+    await runAction(() => client.rpc('transition_task', { p_task_id: selectedTask.id, p_to_status: status, p_comment: comment }), status === 'accepted' ? 'Задача принята' : status === 'rework' ? 'Задача возвращена на доработку' : 'Статус обновлён')
   }
 
   async function deleteObject(object: SiteObject) {
-    if (!supabase || !window.confirm('Убрать объект «' + object.name + '» из активного списка? История задач сохранится.')) return
-    const deleted = await runAction(() => supabase.rpc('soft_delete_object', { p_object_id: object.id }), 'Объект удалён из активного списка')
+    const client = supabase
+    if (!client || !window.confirm('Убрать объект «' + object.name + '» из активного списка? История задач сохранится.')) return
+    const deleted = await runAction(() => client.rpc('soft_delete_object', { p_object_id: object.id }), 'Объект удалён из активного списка')
     if (deleted) {
       setScreen('objects')
       setSelectedObjectId(null)
@@ -176,8 +180,9 @@ function App() {
   }
 
   async function deleteTask(task: WorkTask) {
-    if (!supabase || !window.confirm('Убрать задачу «' + task.title + '» из активного списка? История сохранится.')) return
-    await runAction(() => supabase.rpc('soft_delete_task', { p_task_id: task.id }), 'Задача удалена из активного списка')
+    const client = supabase
+    if (!client || !window.confirm('Убрать задачу «' + task.title + '» из активного списка? История сохранится.')) return
+    await runAction(() => client.rpc('soft_delete_task', { p_task_id: task.id }), 'Задача удалена из активного списка')
   }
 
   async function signOut() {
